@@ -8,9 +8,18 @@ import 'package:spent_app/layers/functional/Spending/domain/entities/spend_categ
 import 'package:spent_app/layers/functional/Spending/domain/gateways/spending_gateway.dart';
 import 'package:spent_app/layers/technical/Formatting/amount_privacy_cubit.dart';
 import 'package:spent_app/layers/technical/Formatting/formatters.dart';
+import 'package:spent_app/layers/technical/Security/device_authenticator.dart';
 import 'package:spent_app/main.dart';
 
 import 'sample_data.dart';
+
+class _FakeAuthenticator implements DeviceAuthenticator {
+  @override
+  Future<bool> isAvailable() async => false;
+
+  @override
+  Future<bool> authenticate(String reason) async => true;
+}
 
 Future<void> _loadFonts() async {
   for (final (family, files) in [
@@ -36,7 +45,7 @@ void main() {
     final entries = sampleTransactions();
     await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: entries, budgets: const {SpendCategory.alim: 320, SpendCategory.resto: 180}, lastImport: 'test.csv'));
 
-    await tester.pumpWidget(EcuApp(prefs: prefs));
+    await tester.pumpWidget(EcuApp(prefs: prefs, authenticator: _FakeAuthenticator()));
     await tester.pumpAndSettle();
     expect(find.text('Vos dépenses'), findsOneWidget);
 
@@ -71,7 +80,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
-    await tester.pumpWidget(EcuApp(prefs: prefs));
+    await tester.pumpWidget(EcuApp(prefs: prefs, authenticator: _FakeAuthenticator()));
     await tester.pumpAndSettle();
     expect(find.textContaining('Aucune opération'), findsOneWidget);
     expect(find.text('Patrimoine · 0 compte'), findsOneWidget);
@@ -91,7 +100,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: sampleTransactions(), budgets: const {SpendCategory.alim: 320}, lastImport: 'test.csv'));
 
-    await tester.pumpWidget(EcuApp(prefs: prefs));
+    await tester.pumpWidget(EcuApp(prefs: prefs, authenticator: _FakeAuthenticator()));
     await tester.pumpAndSettle();
     final blurred = find.byWidgetPredicate((w) => w is ImageFiltered);
     expect(blurred, findsNothing);
@@ -112,7 +121,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: sampleTransactions(), budgets: const {}, lastImport: 'test.csv'));
 
-    await tester.pumpWidget(EcuApp(prefs: prefs));
+    await tester.pumpWidget(EcuApp(prefs: prefs, authenticator: _FakeAuthenticator()));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Opérations').last);
     await tester.pumpAndSettle();
@@ -131,7 +140,7 @@ void main() {
     final entries = sampleTransactions();
     await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: entries, budgets: const {}, lastImport: 'test.csv'));
 
-    await tester.pumpWidget(EcuApp(prefs: prefs));
+    await tester.pumpWidget(EcuApp(prefs: prefs, authenticator: _FakeAuthenticator()));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Opérations').last);
     await tester.pumpAndSettle();

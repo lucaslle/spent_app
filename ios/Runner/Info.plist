@@ -6,6 +6,8 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>écu utilise Face ID pour protéger vos données financières.</string>
 	<key>CFBundleDisplayName</key>
 	<string>écu</string>
 	<key>CFBundleExecutable</key>

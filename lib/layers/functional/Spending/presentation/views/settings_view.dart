@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../technical/Formatting/amount_privacy_cubit.dart';
+import '../../../../technical/Security/app_lock_cubit.dart';
 import '../../../../technical/Theme/app_button.dart';
 import '../../../../technical/Theme/app_card.dart';
 import '../../../../technical/Theme/app_colors.dart';
@@ -38,6 +39,7 @@ class _SettingsViewState extends State<SettingsView> {
   Widget build(BuildContext context) {
     final state = context.watch<SpendingCubit>().state;
     final hide = context.watch<AmountPrivacyCubit>().state;
+    final lock = context.watch<AppLockCubit>().state;
     final cubit = context.read<SpendingCubit>();
     return ScreenScaffold(
       eyebrow: 'Préférences',
@@ -63,6 +65,14 @@ class _SettingsViewState extends State<SettingsView> {
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               const AppText('Flouter les montants'),
               AppToggle(value: hide, onChanged: context.read<AmountPrivacyCubit>().toggle),
+            ]),
+            const SizedBox(height: 14),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const AppText('Verrouillage biométrique'),
+                if (!lock.available) const AppText('Aucun verrouillage d’écran configuré sur cet appareil', size: 12, weight: FontWeight.w500, color: AppColors.muted),
+              ])),
+              Opacity(opacity: lock.available ? 1 : 0.4, child: AppToggle(value: lock.protectionActive, onChanged: () => context.read<AppLockCubit>().setEnabled(!lock.enabled))),
             ]),
           ]),
         ),
