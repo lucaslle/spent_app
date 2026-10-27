@@ -13,6 +13,7 @@ import '../../../../technical/Theme/screen_scaffold.dart';
 import '../../domain/entities/spend_category.dart';
 import '../cubit/spending_cubit.dart';
 import 'import_sheet.dart';
+import 'rule_sheet.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -74,6 +75,30 @@ class _SettingsViewState extends State<SettingsView> {
               ])),
               Opacity(opacity: lock.available ? 1 : 0.4, child: AppToggle(value: lock.protectionActive, onChanged: () => context.read<AppLockCubit>().setEnabled(!lock.enabled))),
             ]),
+          ]),
+        ),
+        AppCard(
+          radius: 20,
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const AppText('Mes règles', size: 15),
+            const SizedBox(height: 4),
+            const AppText('Un mot du libellé suffit. Elles passent avant les mots-clés automatiques.', size: 12, weight: FontWeight.w500, color: AppColors.muted),
+            for (final r in state.rules)
+              SizedBox(
+                height: 44,
+                child: Row(children: [
+                  Expanded(child: AppText('« ${r.keyword} »', size: 13, maxLines: 1)),
+                  AppText(r.category?.label ?? 'Ignorer', size: 12, weight: FontWeight.w600, color: r.category?.color ?? AppColors.muted),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => cubit.removeRule(r.keyword),
+                    child: const SizedBox(width: 40, height: 44, child: Icon(Icons.close_rounded, size: 18, color: AppColors.muted)),
+                  ),
+                ]),
+              ),
+            const SizedBox(height: 8),
+            AppButton(label: '+ Ajouter une règle', background: AppColors.cardInner, foreground: AppColors.accent, height: 44, onPressed: () => showRuleSheet(context)),
           ]),
         ),
         AppCard(

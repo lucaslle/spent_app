@@ -14,6 +14,7 @@ import '../cubit/spending_cubit.dart';
 import '../cubit/spending_state.dart';
 import '../widgets/budget_ring_card.dart';
 import '../widgets/daily_bars_card.dart';
+import '../widgets/month_switcher.dart';
 import '../widgets/transaction_row.dart';
 import 'import_sheet.dart';
 import 'transaction_detail_sheet.dart';
@@ -55,6 +56,7 @@ class TodayView extends StatelessWidget {
       topBar: topBar,
       children: [
         wealthCard,
+        const MonthSwitcher(),
         BudgetRingCard(stats: s, onOpenBudget: onOpenBudget),
         _IncomeRow(stats: s, onTap: () => onShowFilter('in')),
         IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

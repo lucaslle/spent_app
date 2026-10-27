@@ -11,6 +11,7 @@ import '../../../../technical/Theme/progress_bar.dart';
 import '../../../../technical/Theme/screen_scaffold.dart';
 import '../../domain/spending_stats.dart';
 import '../cubit/spending_cubit.dart';
+import '../widgets/month_switcher.dart';
 
 class BudgetView extends StatelessWidget {
   const BudgetView({super.key});
@@ -26,6 +27,7 @@ class BudgetView extends StatelessWidget {
       title: 'Budget',
       eyebrow: '${capitalize(mois[s.month - 1])} ${s.year}',
       children: [
+        const MonthSwitcher(),
         AppCard(
           child: Column(children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [

@@ -1,6 +1,19 @@
+import 'entities/category_rule.dart';
 import 'entities/spend_category.dart';
 
-SpendCategory categorize(String label, double amount) {
+bool isIgnoredByRules(String label, List<CategoryRule> rules) => rules.any((r) => r.isIgnore && r.matches(label));
+
+SpendCategory? _categoryFromRules(String label, List<CategoryRule> rules) {
+  CategoryRule? best;
+  for (final r in rules) {
+    if (!r.isIgnore && r.matches(label) && (best == null || r.keyword.length > best.keyword.length)) best = r;
+  }
+  return best?.category;
+}
+
+SpendCategory categorize(String label, double amount, {List<CategoryRule> rules = const []}) {
+  final fromRules = _categoryFromRules(label, rules);
+  if (fromRules != null) return fromRules;
   final l = ' ${label.toLowerCase()} ';
   SpendCategory? best;
   var bestLen = 0;
@@ -17,10 +30,6 @@ SpendCategory categorize(String label, double amount) {
   if (best == SpendCategory.revenus && amount < 0) best = SpendCategory.autre;
   return best;
 }
-
-final _ignoredLabel = RegExp('offre confort', caseSensitive: false);
-
-bool isIgnoredLabel(String label) => _ignoredLabel.hasMatch(label);
 
 const _stop = {'SAS', 'SA', 'SARL', 'FR', 'PARIS', 'EU', 'P', 'CLIENTS', 'INTERNET', 'ANNUEL', 'TRIP', 'CITE', 'GAMES', 'SEPA'};
 const _acronyms = {'UGC', 'EDF', 'SNCF', 'RATP', 'SFR', 'KFC', 'H&M'};

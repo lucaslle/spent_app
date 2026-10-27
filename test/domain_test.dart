@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spent_app/layers/functional/Spending/domain/categorizer.dart';
 import 'package:spent_app/layers/functional/Spending/domain/csv_parser.dart';
+import 'package:spent_app/layers/functional/Spending/domain/entities/category_rule.dart';
 import 'package:spent_app/layers/functional/Spending/domain/entities/spend_category.dart';
 import 'package:spent_app/layers/functional/Spending/domain/spending_stats.dart';
 import 'package:spent_app/layers/technical/Formatting/formatters.dart';
@@ -51,6 +52,7 @@ void main() {
     expect(s.daysInMonth, 31);
     expect(s.spent, greaterThan(0));
     expect(s.merchants.length, 5);
+    expect(s.months.map((m) => m.key), ['2026-08', '2026-09', '2026-10']);
     expect(computeSpendingStats(const [], _budgets, '2026-10-27'), isNull);
   });
 
@@ -121,7 +123,7 @@ void main() {
 
   test('offre confort (frais et remise) est exclue des stats', () {
     const head = 'Date operation;Libelle operation;Debit;Credit';
-    final p = parseCsv('$head\n05/10/2026;OFFRE CONFORT;-1,55;\n06/10/2026;REMISE OFFRE CONFORT;;+1,55\n07/10/2026;CB LIDL;-10,00;') as CsvParsed;
+    final p = parseCsv('$head\n05/10/2026;OFFRE CONFORT;-1,55;\n06/10/2026;REMISE OFFRE CONFORT;;+1,55\n07/10/2026;CB LIDL;-10,00;', rules: defaultRules) as CsvParsed;
     final byRaw = {for (final t in p.entries) t.raw: t};
     expect(byRaw['OFFRE CONFORT']!.excluded, isTrue);
     expect(byRaw['REMISE OFFRE CONFORT']!.excluded, isTrue);
@@ -129,5 +131,31 @@ void main() {
     final s = computeSpendingStats(p.entries, const {}, '2026-10-12')!;
     expect(s.spent, 10);
     expect(s.income, 0);
+  });
+
+  test('règles personnelles : prioritaires sur les mots-clés, ou ignorer', () {
+    const rules = [
+      CategoryRule(keyword: 'envoi wero', category: SpendCategory.loisirs),
+      CategoryRule(keyword: 'envoi wero vincent', category: SpendCategory.alim),
+      CategoryRule(keyword: 'cafeomatic'),
+    ];
+    expect(categorize('ENVOI WERO CLARA', -30, rules: rules), SpendCategory.loisirs);
+    expect(categorize('ENVOI WERO VINCENT', -30, rules: rules), SpendCategory.alim);
+    expect(categorize('ENVOI WERO CLARA', -30), SpendCategory.virements);
+    expect(isIgnoredByRules('CB CAFEOMATIC FACT', rules), isTrue);
+    expect(isIgnoredByRules('CB LIDL', rules), isFalse);
+    const head = 'Date operation;Libelle operation;Categorie;Debit;Credit';
+    final p = parseCsv('$head\n05/10/2026;CB BIDULE;Transports;-12,00;', rules: const [CategoryRule(keyword: 'bidule', category: SpendCategory.sante)]) as CsvParsed;
+    expect(p.entries.single.category, SpendCategory.sante);
+  });
+
+  test('mois consultables et statistiques d’un mois passé', () {
+    final tx = sampleTransactions();
+    expect(availableMonths(tx, '2026-10-27'), ['2026-08', '2026-09', '2026-10']);
+    final sept = computeSpendingStats(tx, _budgets, '2026-10-27', month: '2026-09')!;
+    expect((sept.month, sept.day, sept.daysInMonth, sept.isToday), (9, 30, 30, false));
+    final oct = computeSpendingStats(tx, _budgets, '2026-10-27', month: '2026-10')!;
+    expect((oct.month, oct.day, oct.isToday), (10, 27, true));
+    expect(sept.spent, isNot(oct.spent));
   });
 }

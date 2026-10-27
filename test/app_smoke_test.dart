@@ -147,4 +147,57 @@ void main() {
     final net = entries.fold<double>(0, (a, t) => a + t.amount);
     expect(find.text('${entries.length} opérations · ${formatEuro(net, sign: true)}'), findsOneWidget);
   });
+
+  testWidgets('Entrées et sorties affiche la balance totale et change de période', (tester) async {
+    await _loadFonts();
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: sampleTransactions(), budgets: const {}, lastImport: 'test.csv'));
+
+    await tester.pumpWidget(EcuApp(prefs: prefs, authenticator: _FakeAuthenticator()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Analyse').last);
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(find.text('Entrées et sorties'), find.byType(ListView).first, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    expect(find.text('Balance'), findsOneWidget);
+    expect(find.textContaining('Sur 3 mois'), findsOneWidget);
+    await tester.tap(find.text('6 mois'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Sur 3 mois'), findsOneWidget);
+  });
+
+  testWidgets('ajoute une règle depuis les réglages et change de mois', (tester) async {
+    await _loadFonts();
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: sampleTransactions(), budgets: const {}, lastImport: 'test.csv'));
+
+    await tester.pumpWidget(EcuApp(prefs: prefs, authenticator: _FakeAuthenticator()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Budget').last);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Septembre'), findsWidgets);
+
+    await tester.tap(find.text('Réglages').last);
+    await tester.pumpAndSettle();
+    expect(find.text('« offre confort »'), findsOneWidget);
+    await tester.dragUntilVisible(find.text('+ Ajouter une règle'), find.byType(ListView).first, const Offset(0, -200));
+    await tester.tap(find.text('+ Ajouter une règle'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'monoprix');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ajouter la règle'));
+    await tester.pumpAndSettle();
+    expect(find.text('« monoprix »'), findsOneWidget);
+  });
 }

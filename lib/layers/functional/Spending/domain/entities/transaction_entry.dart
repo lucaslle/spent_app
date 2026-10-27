@@ -11,6 +11,7 @@ class TransactionEntry extends Equatable {
     required this.category,
     this.excluded = false,
     this.manual = false,
+    this.reference,
   });
 
   final String id;
@@ -20,6 +21,7 @@ class TransactionEntry extends Equatable {
   final SpendCategory category;
   final bool excluded;
   final bool manual;
+  final String? reference;
 
   bool get isSpend => !excluded && SpendCategory.spending.contains(category) && (amount < 0 || category != SpendCategory.autre);
   bool get isVariableSpend => isSpend && !category.isFixed;
@@ -33,10 +35,11 @@ class TransactionEntry extends Equatable {
         category: category ?? this.category,
         excluded: excluded ?? this.excluded,
         manual: manual ?? this.manual,
+        reference: reference,
       );
 
   @override
-  List<Object?> get props => [id, date, raw, amount, category, excluded, manual];
+  List<Object?> get props => [id, date, raw, amount, category, excluded, manual, reference];
 }
 
 int compareByDateDesc(TransactionEntry a, TransactionEntry b) => b.date.compareTo(a.date);

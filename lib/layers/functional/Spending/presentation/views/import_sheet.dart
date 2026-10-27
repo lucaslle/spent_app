@@ -43,7 +43,7 @@ class _ImportSheetState extends State<_ImportSheet> {
   ImportMode _mode = ImportMode.replace;
 
   void _handle(String name, String text) {
-    final result = parseCsv(text);
+    final result = parseCsv(text, rules: context.read<SpendingCubit>().state.rules);
     setState(() {
       switch (result) {
         case CsvFailure(:final message):
@@ -68,11 +68,11 @@ class _ImportSheetState extends State<_ImportSheet> {
   Future<void> _confirm(CsvParsed p) async {
     final navigator = Navigator.of(context);
     final messenger = Navigator.of(context, rootNavigator: true).context;
-    await context.read<SpendingCubit>().importEntries(p.entries, _fileName, _mode);
+    final added = await context.read<SpendingCubit>().importEntries(p.entries, _fileName, _mode);
     if (!mounted) return;
     context.read<SpendingViewCubit>().setFilter('all');
     navigator.pop();
-    if (messenger.mounted) showToast(messenger, '${p.entries.length} opérations importées');
+    if (messenger.mounted) showToast(messenger, _mode == ImportMode.append ? '$added nouvelles opérations · ${p.entries.length - added} déjà présentes' : '${p.entries.length} opérations importées');
   }
 
   @override

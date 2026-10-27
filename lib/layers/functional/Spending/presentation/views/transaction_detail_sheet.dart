@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../technical/Formatting/amount_privacy_cubit.dart';
 import '../../../../technical/Formatting/formatters.dart';
+import '../../../../technical/Theme/app_button.dart';
 import '../../../../technical/Theme/app_card.dart';
 import '../../../../technical/Theme/app_chip.dart';
 import '../../../../technical/Theme/app_colors.dart';
@@ -75,6 +76,17 @@ class _DetailSheetState extends State<_DetailSheet> {
               },
             ),
         ]),
+        AppButton(
+          label: 'Retenir pour les prochains imports',
+          background: AppColors.cardInner,
+          foreground: AppColors.accent,
+          height: 44,
+          onPressed: () async {
+            final keyword = _ruleKeyword(t.raw, name);
+            await cubit.addRule(keyword, t.category);
+            if (widget.toastContext.mounted) showToast(widget.toastContext, 'Règle ajoutée : « $keyword » → ${t.category.label}');
+          },
+        ),
         if (others > 0)
           Row(children: [
             Expanded(child: AppText('Appliquer aux $others autres « $name »', size: 13)),
@@ -99,4 +111,10 @@ class _DetailSheetState extends State<_DetailSheet> {
       ].withGap(14)),
     );
   }
+}
+
+String _ruleKeyword(String raw, String merchant) {
+  final lower = raw.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  final full = merchant.toLowerCase();
+  return lower.contains(full) ? full : full.split(' ').first;
 }

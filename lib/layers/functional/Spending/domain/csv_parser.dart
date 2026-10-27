@@ -1,5 +1,6 @@
 import '../../../technical/Formatting/formatters.dart';
 import 'categorizer.dart';
+import 'entities/category_rule.dart';
 import 'entities/spend_category.dart';
 import 'entities/transaction_entry.dart';
 
@@ -29,9 +30,12 @@ final _operationDateRe = RegExp(r'date.*op[ée]ration', caseSensitive: false);
 final _plainDateRe = RegExp(r'^(?!.*valeur).*date', caseSensitive: false);
 final _operationLabelRe = RegExp(r'libell.*op[ée]ration', caseSensitive: false);
 final _amountRe = RegExp(r'^(?!.*date).*(montant|amount|somme|valeur)', caseSensitive: false);
+final _referenceRe = RegExp(r'^r[ée]f[ée]rence$', caseSensitive: false);
 final _bankCategoryRe = RegExp(r'^cat[ée]gorie$', caseSensitive: false);
 final _bankExcludedRe = RegExp('exclue', caseSensitive: false);
 final _labelRe = RegExp(r'libell|label|description|intitul|nature|d[ée]tail|merchant|b[ée]n[ée]ficiaire', caseSensitive: false);
+
+bool _hasCategoryRule(String raw, List<CategoryRule> rules) => rules.any((r) => !r.isIgnore && r.matches(raw));
 
 const _bankCategories = {
   'aliment': SpendCategory.alim,
@@ -77,7 +81,7 @@ List<String> _splitLine(String line, String sep) {
   return out.map((x) => x.trim()).toList();
 }
 
-CsvResult parseCsv(String input) {
+CsvResult parseCsv(String input, {List<CategoryRule> rules = const []}) {
   final text = input.replaceFirst('﻿', '');
   final lines = text.split(RegExp(r'\r?\n')).where((l) => l.trim().isNotEmpty).toList();
   if (lines.isEmpty) return const CsvFailure('Fichier vide.');
@@ -106,6 +110,7 @@ CsvResult parseCsv(String input) {
   var li = findFirst([_operationLabelRe, _labelRe]);
   var ai = find(_amountRe);
   final bankCategoryIndex = find(_bankCategoryRe);
+  final referenceIndex = find(_referenceRe);
   final dbi = find(RegExp(r'd[ée]bit', caseSensitive: false));
   final cri = find(RegExp(r'cr[ée]dit', caseSensitive: false));
 
@@ -152,15 +157,16 @@ CsvResult parseCsv(String input) {
     }
     final rounded = (amt * 100).round() / 100;
     final bankCategory = cell(r, bankCategoryIndex);
-    var category = categorize(raw, rounded);
-    if (category == SpendCategory.autre && rounded < 0) category = _fromBankCategory(bankCategory) ?? category;
+    var category = categorize(raw, rounded, rules: rules);
+    if (category == SpendCategory.autre && rounded < 0 && !_hasCategoryRule(raw, rules)) category = _fromBankCategory(bankCategory) ?? category;
     entries.add(TransactionEntry(
       id: 'i${i}_${DateTime.now().microsecondsSinceEpoch}',
       date: date,
       raw: raw,
       amount: rounded,
       category: category,
-      excluded: _bankExcludedRe.hasMatch(bankCategory) || isIgnoredLabel(raw),
+      excluded: _bankExcludedRe.hasMatch(bankCategory) || isIgnoredByRules(raw, rules),
+      reference: cell(r, referenceIndex).isEmpty ? null : cell(r, referenceIndex),
     ));
   }
   if (entries.isEmpty) return const CsvFailure('Aucune opération lisible dans ce fichier.');

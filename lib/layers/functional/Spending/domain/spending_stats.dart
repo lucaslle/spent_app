@@ -80,11 +80,27 @@ class SpendingStats {
 double _sum(Iterable<double> a) => a.fold(0, (x, y) => x + y);
 double _sumAbs(Iterable<TransactionEntry> a) => a.fold(0, (x, t) => x - t.amount);
 
-SpendingStats? computeSpendingStats(List<TransactionEntry> tx, Map<SpendCategory, double> budgets, String today) {
-  if (tx.isEmpty) return null;
+String _defaultReference(List<TransactionEntry> tx, String today) {
   final latest = tx.map((t) => t.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
   final inCurrentMonth = latest.substring(0, 7).compareTo(today.substring(0, 7)) >= 0;
-  final ref = inCurrentMonth && today.compareTo(latest) > 0 ? today : latest;
+  return inCurrentMonth && today.compareTo(latest) > 0 ? today : latest;
+}
+
+/// Mois (AAAA-MM) consultables, du plus ancien au plus récent.
+List<String> availableMonths(List<TransactionEntry> tx, String today) {
+  if (tx.isEmpty) return const [];
+  final months = {for (final t in tx) t.date.substring(0, 7), _defaultReference(tx, today).substring(0, 7)}.toList()..sort();
+  return months;
+}
+
+SpendingStats? computeSpendingStats(List<TransactionEntry> tx, Map<SpendCategory, double> budgets, String today, {String? month}) {
+  if (tx.isEmpty) return null;
+  var ref = _defaultReference(tx, today);
+  if (month != null && month != ref.substring(0, 7)) {
+    final y = int.parse(month.substring(0, 4));
+    final m = int.parse(month.substring(5));
+    ref = isoDate(y, m, daysInMonth(y, m));
+  }
   final r = IsoDate.parse(ref);
   final days = daysInMonth(r.y, r.m);
   final ym = ref.substring(0, 7);
@@ -148,13 +164,13 @@ SpendingStats? computeSpendingStats(List<TransactionEntry> tx, Map<SpendCategory
   for (var t = DateTime.utc(m0.y, m0.m, m0.d); !t.isAfter(end); t = t.add(const Duration(days: 1))) {
     dowCount[t.weekday % 7]++;
   }
-  for (final t in tx.where((t) => t.isVariableSpend)) {
+  for (final t in tx.where((t) => t.isVariableSpend && t.date.compareTo(ref) <= 0)) {
     dowSum[IsoDate.parse(t.date).weekday] -= t.amount;
   }
   final weekdayAverages = [1, 2, 3, 4, 5, 6, 0].map((i) => dowCount[i] > 0 ? dowSum[i] / dowCount[i] : 0.0).toList();
 
   final keys = (tx.map((t) => t.date.substring(0, 7)).toSet().toList()..sort());
-  final months = keys.skip(keys.length > 4 ? keys.length - 4 : 0).map((key) {
+  final months = keys.map((key) {
     final list = tx.where((t) => t.date.startsWith(key) && !t.excluded).toList();
     return MonthStat(key: key, month: int.parse(key.substring(5)), income: _sum(list.where((t) => t.isIncome).map((t) => t.amount)), out: _sumAbs(list.where((t) => t.isSpend)));
   }).toList();

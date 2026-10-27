@@ -8,6 +8,8 @@ import '../../../../technical/Formatting/amount_privacy_cubit.dart';
 import '../../../../technical/Formatting/formatters.dart';
 import '../../../../technical/Theme/app_button.dart';
 import '../../../../technical/Theme/app_card.dart';
+import '../../../../technical/Theme/app_chip.dart';
+import '../../../../technical/Theme/row_gap.dart';
 import '../../../../technical/Theme/app_colors.dart';
 import '../../../../technical/Theme/app_text.dart';
 import '../../../../technical/Theme/avatar_badge.dart';
@@ -19,6 +21,7 @@ import '../../domain/spending_stats.dart';
 import '../cubit/spending_cubit.dart';
 import '../cubit/spending_view_cubit.dart';
 import '../widgets/cumul_chart.dart';
+import '../widgets/month_switcher.dart';
 
 class AnalysisView extends StatelessWidget {
   const AnalysisView({super.key, required this.onShowFilter});
@@ -37,6 +40,7 @@ class AnalysisView extends StatelessWidget {
       title: 'Analyse',
       eyebrow: '${capitalize(mois[s.month - 1])} ${s.year}',
       children: [
+        const MonthSwitcher(),
         _Breakdown(stats: s, onShowFilter: onShowFilter),
         _Cumul(stats: s),
         Row(children: [
@@ -231,18 +235,44 @@ class _Months extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final max = stats.months.fold<double>(1, (a, m) => math.max(a, math.max(m.income, m.out)));
+    final view = context.watch<SpendingViewCubit>();
+    final range = view.state.monthsRange;
+    final all = stats.months;
+    final shown = (range == 0 || range >= all.length ? all : all.sublist(all.length - range)).reversed.toList();
+    final income = shown.fold<double>(0, (a, m) => a + m.income);
+    final out = shown.fold<double>(0, (a, m) => a + m.out);
+    final balance = income - out;
+    final max = shown.fold<double>(1, (a, m) => math.max(a, math.max(m.income, m.out)));
+    final summary = [('Entrées', income, AppColors.pos), ('Sorties', -out, AppColors.text), ('Balance', balance, balance >= 0 ? AppColors.pos : AppColors.neg)];
     return AppCard(
       radius: 20,
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const AppText('Entrées et sorties', size: 15),
-        for (final m in stats.months)
+        const SizedBox(height: 12),
+        Row(children: [
+          for (final (label, months) in const [('6 mois', 6), ('12 mois', 12), ('Tout', 0)]) ...[
+            AppChip(label: label, selected: range == months, onTap: () => view.setMonthsRange(months)),
+            const SizedBox(width: 8),
+          ],
+        ]),
+        const SizedBox(height: 14),
+        Row(children: [
+          for (final (label, value, color) in summary)
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                AppText(label, size: 11, weight: FontWeight.w600, color: AppColors.muted),
+                FittedBox(fit: BoxFit.scaleDown, child: AppText(context.money(value, sign: true, decimals: 0), size: 15, weight: FontWeight.w800, color: color)),
+              ]),
+            ),
+        ]),
+        AppText('Sur ${shown.length} mois · moyenne ${context.money(shown.isEmpty ? 0 : balance / shown.length, sign: true, decimals: 0)} par mois', size: 11, weight: FontWeight.w500, color: AppColors.muted),
+        for (final m in shown)
           Padding(
             padding: const EdgeInsets.only(top: 12),
             child: Column(children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                AppText(capitalize(moisCourts[m.month - 1]), size: 12, color: AppColors.muted),
+                AppText('${capitalize(moisCourts[m.month - 1])} ${m.key.substring(2, 4)}', size: 12, color: AppColors.muted),
                 AppText(context.money(m.income - m.out, sign: true, decimals: 0), size: 12, color: m.income - m.out >= 0 ? AppColors.pos : AppColors.neg),
               ]),
               const SizedBox(height: 4),
@@ -251,7 +281,7 @@ class _Months extends StatelessWidget {
               ProgressBar(ratio: m.out / max, color: AppColors.prev, height: 6),
             ]),
           ),
-      ]),
+      ].withGap(0)),
     );
   }
 }
