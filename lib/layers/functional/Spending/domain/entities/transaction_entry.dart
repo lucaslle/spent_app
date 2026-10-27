@@ -21,7 +21,7 @@ class TransactionEntry extends Equatable {
   final bool excluded;
   final bool manual;
 
-  bool get isSpend => amount < 0 && !excluded && SpendCategory.spending.contains(category);
+  bool get isSpend => !excluded && SpendCategory.spending.contains(category) && (amount < 0 || category != SpendCategory.autre);
   bool get isVariableSpend => isSpend && !category.isFixed;
   bool get isIncome => amount > 0 && !excluded && category == SpendCategory.revenus;
 

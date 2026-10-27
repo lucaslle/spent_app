@@ -82,7 +82,9 @@ double _sumAbs(Iterable<TransactionEntry> a) => a.fold(0, (x, t) => x - t.amount
 
 SpendingStats? computeSpendingStats(List<TransactionEntry> tx, Map<SpendCategory, double> budgets, String today) {
   if (tx.isEmpty) return null;
-  final ref = tx.map((t) => t.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
+  final latest = tx.map((t) => t.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
+  final inCurrentMonth = latest.substring(0, 7).compareTo(today.substring(0, 7)) >= 0;
+  final ref = inCurrentMonth && today.compareTo(latest) > 0 ? today : latest;
   final r = IsoDate.parse(ref);
   final days = daysInMonth(r.y, r.m);
   final ym = ref.substring(0, 7);

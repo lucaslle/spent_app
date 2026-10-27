@@ -12,10 +12,15 @@ SpendCategory categorize(String label, double amount) {
       }
     }
   }
+  if (amount > 0 && best == SpendCategory.virements && l.contains('vir sepa')) best = SpendCategory.revenus;
   best ??= amount > 0 ? SpendCategory.revenus : SpendCategory.autre;
   if (best == SpendCategory.revenus && amount < 0) best = SpendCategory.autre;
   return best;
 }
+
+final _ignoredLabel = RegExp('offre confort', caseSensitive: false);
+
+bool isIgnoredLabel(String label) => _ignoredLabel.hasMatch(label);
 
 const _stop = {'SAS', 'SA', 'SARL', 'FR', 'PARIS', 'EU', 'P', 'CLIENTS', 'INTERNET', 'ANNUEL', 'TRIP', 'CITE', 'GAMES', 'SEPA'};
 const _acronyms = {'UGC', 'EDF', 'SNCF', 'RATP', 'SFR', 'KFC', 'H&M'};

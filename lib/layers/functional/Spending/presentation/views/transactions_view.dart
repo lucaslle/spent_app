@@ -16,7 +16,7 @@ import '../cubit/spending_view_cubit.dart';
 import '../widgets/transaction_row.dart';
 import 'transaction_detail_sheet.dart';
 
-bool _matches(TransactionEntry t, String f) => f == 'all' || (f == 'out' && t.amount < 0) || (f == 'in' && t.amount > 0) || t.category.name == f;
+bool _matches(TransactionEntry t, String f) => f == 'all' || (f == 'out' && t.amount < 0 && SpendCategory.spending.contains(t.category)) || (f == 'in' && t.isIncome) || t.category.name == f;
 
 class TransactionsView extends StatefulWidget {
   const TransactionsView({super.key});
@@ -51,10 +51,10 @@ class _TransactionsViewState extends State<TransactionsView> {
     }
     final stats = state.stats;
     String label(String d) => stats != null && stats.isToday && d == stats.ref ? 'Aujourd’hui' : (stats != null && stats.isToday && d == stats.yesterday ? 'Hier' : dayLabel(d));
-    final out = list.where((t) => t.amount < 0).fold<double>(0, (a, t) => a + t.amount);
+    final total = list.fold<double>(0, (a, t) => a + t.amount);
 
     final filters = <(String, String, Color?)>[
-      ('all', 'Tout', null), ('out', 'Dépenses', null), ('in', 'Revenus', null), ('autre', 'À classer · ${state.toReviewCount}', null),
+      ('all', 'Tout', null), ('out', 'Dépenses', null), ('in', 'Revenus', null), (SpendCategory.invest.name, 'Investissement', SpendCategory.invest.color), ('autre', 'À classer · ${state.toReviewCount}', null),
       for (final c in SpendCategory.spending.where((c) => c != SpendCategory.autre)) (c.name, c.label, c.color),
     ];
 
@@ -90,7 +90,7 @@ class _TransactionsViewState extends State<TransactionsView> {
         ),
       ]),
       children: [
-        AppText('${list.length} opérations · ${context.money(out)}', size: 12, weight: FontWeight.w600, color: AppColors.muted),
+        AppText('${list.length} opérations · ${context.money(total, sign: true)}', size: 12, weight: FontWeight.w600, color: AppColors.muted),
         if (groups.isEmpty) const Padding(padding: EdgeInsets.only(top: 24), child: AppText('Aucun résultat.', weight: FontWeight.w500, color: AppColors.muted, align: TextAlign.center)),
         for (final g in groups)
           AppCard(

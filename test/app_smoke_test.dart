@@ -7,6 +7,7 @@ import 'package:spent_app/layers/functional/Spending/data/shared_prefs_spending_
 import 'package:spent_app/layers/functional/Spending/domain/entities/spend_category.dart';
 import 'package:spent_app/layers/functional/Spending/domain/gateways/spending_gateway.dart';
 import 'package:spent_app/layers/technical/Formatting/amount_privacy_cubit.dart';
+import 'package:spent_app/layers/technical/Formatting/formatters.dart';
 import 'package:spent_app/main.dart';
 
 import 'sample_data.dart';
@@ -100,5 +101,41 @@ void main() {
     await tester.element(find.text('Vos dépenses')).read<AmountPrivacyCubit>().toggle();
     await tester.pumpAndSettle();
     expect(blurred, findsNothing);
+  });
+
+  testWidgets('le filtre Revenus affiche un total positif', (tester) async {
+    await _loadFonts();
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: sampleTransactions(), budgets: const {}, lastImport: 'test.csv'));
+
+    await tester.pumpWidget(EcuApp(prefs: prefs));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Opérations').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Revenus').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining(RegExp(r'opérations · \+\d')), findsOneWidget);
+  });
+
+  testWidgets('le total de Tout est le solde net des opérations affichées', (tester) async {
+    await _loadFonts();
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final entries = sampleTransactions();
+    await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: entries, budgets: const {}, lastImport: 'test.csv'));
+
+    await tester.pumpWidget(EcuApp(prefs: prefs));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Opérations').last);
+    await tester.pumpAndSettle();
+    final net = entries.fold<double>(0, (a, t) => a + t.amount);
+    expect(find.text('${entries.length} opérations · ${formatEuro(net, sign: true)}'), findsOneWidget);
   });
 }

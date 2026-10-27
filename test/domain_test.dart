@@ -53,4 +53,81 @@ void main() {
     expect(s.merchants.length, 5);
     expect(computeSpendingStats(const [], _budgets, '2026-10-27'), isNull);
   });
+
+  test('parseCsv lit l’export bancaire à colonnes multiples', () {
+    const csv = 'Date de comptabilisation;Libelle simplifie;Libelle operation;Reference;Informations complementaires;Type operation;Categorie;Sous categorie;Debit;Credit;Date operation;Date de valeur;Pointage operation\n'
+        '28/10/2026;MONOPRIX;CARTE X1234 28/10 MONOPRIX PARIS;REF1;;Paiement par carte;Alimentation;Supermarche;-23,45;;27/10/2026;28/10/2026;\n'
+        '29/10/2026;FONCIA;PRLV SEPA FONCIA LOYER;REF2;;Prelevement;Logement;Loyer;720,00;;29/10/2026;29/10/2026;\n'
+        '30/10/2026;ACME;VIR SEPA SALAIRE ACME;REF3;;Virement;Revenus;Salaire;;2150,00;30/10/2026;30/10/2026;';
+    final p = parseCsv(csv) as CsvParsed;
+    expect(p.entries.length, 3);
+    expect(p.labelColumn, 'Libelle operation');
+    expect(p.dateColumn, 'Date operation');
+    expect(p.amountColumn, 'Debit / Credit');
+    final byRaw = {for (final t in p.entries) t.raw: t};
+    expect(byRaw['CARTE X1234 28/10 MONOPRIX PARIS']!.amount, -23.45);
+    expect(byRaw['CARTE X1234 28/10 MONOPRIX PARIS']!.date, '2026-10-27');
+    expect(byRaw['CARTE X1234 28/10 MONOPRIX PARIS']!.category, SpendCategory.alim);
+    expect(byRaw['PRLV SEPA FONCIA LOYER']!.amount, -720);
+    expect(byRaw['VIR SEPA SALAIRE ACME']!.amount, 2150);
+    expect(byRaw['VIR SEPA SALAIRE ACME']!.category, SpendCategory.revenus);
+  });
+
+  test('revenus, virements internes et catégorie bancaire', () {
+    const head = 'Date de comptabilisation;Libelle simplifie;Libelle operation;Reference;Informations complementaires;Type operation;Categorie;Sous categorie;Debit;Credit;Date operation;Date de valeur;Pointage operation';
+    final csv = '$head\n'
+        '05/10/2026;X;VIR SEPA ACME CORP;R;;Virement recu;A categoriser - rentree d\'argent;;;+1816,76;05/10/2026;05/10/2026;0\n'
+        '06/10/2026;X;VIR INST M. DUPONT;R;;Virement recu;A categoriser - rentree d\'argent;;;+20,00;06/10/2026;06/10/2026;0\n'
+        '07/10/2026;X;VIREMENT VERS CPT;R;;Virement;Transaction exclue;;-500,00;;07/10/2026;07/10/2026;0\n'
+        '08/10/2026;X;CB BIDULE SHOP;R;;Carte bancaire;Transports;;-12,00;;08/10/2026;08/10/2026;0\n'
+        '09/10/2026;X;CB CARREFOUR.FR;R;;Carte bancaire;Alimentation;;;+2,45;09/10/2026;09/10/2026;0';
+    final p = parseCsv(csv) as CsvParsed;
+    final byRaw = {for (final t in p.entries) t.raw: t};
+    expect(byRaw['VIR SEPA ACME CORP']!.category, SpendCategory.revenus);
+    expect(byRaw['VIR SEPA ACME CORP']!.amount, 1816.76);
+    expect(byRaw['VIR INST M. DUPONT']!.category, SpendCategory.virements);
+    expect(byRaw['VIREMENT VERS CPT']!.excluded, isTrue);
+    expect(byRaw['CB BIDULE SHOP']!.category, SpendCategory.transport);
+    expect(byRaw['CB CARREFOUR.FR']!.isSpend, isTrue);
+    final s = computeSpendingStats(p.entries, const {}, '2026-10-12')!;
+    expect(s.income, 1816.76);
+    expect(s.spent, closeTo(12 - 2.45, 0.001));
+  });
+
+  test('le mois affiché suit la date du jour, sauf export ancien', () {
+    final tx = (parseCsv('Date;Libellé;Montant\n23/10/2026;CB LIDL;-10,00') as CsvParsed).entries;
+    final now = computeSpendingStats(tx, const {}, '2026-10-27')!;
+    expect((now.ref, now.day, now.isToday), ('2026-10-27', 27, true));
+    final old = computeSpendingStats(tx, const {}, '2026-12-05')!;
+    expect((old.ref, old.day, old.isToday), ('2026-10-23', 23, false));
+  });
+
+  test('épargne et investissement ne sont ni dépenses ni revenus', () {
+    expect(categorize('VIREMENT VERS LIVRET A', -500), SpendCategory.invest);
+    expect(categorize('VIR. VERS PEL', -50), SpendCategory.invest);
+    expect(categorize('VIREMENT VERS CPT', 45), SpendCategory.invest);
+    expect(categorize('OUVERTURE QUADRETO', -8000), SpendCategory.invest);
+    expect(categorize('VIREMENT SEPA LOYER MARC', -300), SpendCategory.virements);
+    const head = 'Date operation;Libelle operation;Categorie;Debit;Credit';
+    final p = parseCsv('$head\n05/10/2026;BOURSO LUCAS;Epargne;-300,00;\n06/10/2026;CB BOURSORAMA FACT;Banque et assurances;-300,00;') as CsvParsed;
+    final byRaw = {for (final t in p.entries) t.raw: t};
+    expect(byRaw['BOURSO LUCAS']!.category, SpendCategory.invest);
+    expect(byRaw['BOURSO LUCAS']!.isSpend, isFalse);
+    expect(byRaw['CB BOURSORAMA FACT']!.category, SpendCategory.invest);
+    final s = computeSpendingStats([byRaw['BOURSO LUCAS']!], const {}, '2026-10-12')!;
+    expect(s.spent, 0);
+    expect(s.income, 0);
+  });
+
+  test('offre confort (frais et remise) est exclue des stats', () {
+    const head = 'Date operation;Libelle operation;Debit;Credit';
+    final p = parseCsv('$head\n05/10/2026;OFFRE CONFORT;-1,55;\n06/10/2026;REMISE OFFRE CONFORT;;+1,55\n07/10/2026;CB LIDL;-10,00;') as CsvParsed;
+    final byRaw = {for (final t in p.entries) t.raw: t};
+    expect(byRaw['OFFRE CONFORT']!.excluded, isTrue);
+    expect(byRaw['REMISE OFFRE CONFORT']!.excluded, isTrue);
+    expect(byRaw['CB LIDL']!.excluded, isFalse);
+    final s = computeSpendingStats(p.entries, const {}, '2026-10-12')!;
+    expect(s.spent, 10);
+    expect(s.income, 0);
+  });
 }

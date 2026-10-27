@@ -10,7 +10,8 @@ enum SpendCategory {
   loisirs('Loisirs', 0xFF5ED6C9, ['ugc', 'pathe', 'cinema', 'steam', 'playstation', 'concert', 'ticketmaster', 'musee', 'fnac spectacles', 'bar ']),
   sante('Santé', 0xFFFF8A80, ['pharmacie', 'doctolib', 'medecin', 'dentiste', 'mutuelle', 'opticien']),
   revenus('Revenus', 0xFF9BE15D, ['salaire', 'caf ', 'remboursement']),
-  virements('Virements', 0xFF9AA3AE, ['lydia', 'vir ', 'virement', 'paylib', 'wero']),
+  invest('Investissement', 0xFFE879F9, ['virement vers livret', 'vir. vers livret', 'vers livret', 'vers pel', 'vers ldds', 'vers lep', 'virement vers cpt', 'vir. vers cpt', 'virement vers compte', 'ouverture', 'quadreto', 'trade republic', 'binance', 'coinbase', 'assurance vie', 'assurance-vie', 'versement pea', 'bourso']),
+  virements('Virements', 0xFF9AA3AE, ['lydia', 'vir ', 'vir.', 'vir inst', 'versement vir', 'virement', 'paylib', 'wero']),
   autre('À classer', 0xFF8C8C99, []);
 
   const SpendCategory(this.label, this.argb, this.keywords);

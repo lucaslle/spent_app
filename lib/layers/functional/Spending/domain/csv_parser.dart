@@ -1,5 +1,6 @@
 import '../../../technical/Formatting/formatters.dart';
 import 'categorizer.dart';
+import 'entities/spend_category.dart';
 import 'entities/transaction_entry.dart';
 
 sealed class CsvResult {
@@ -24,7 +25,33 @@ class CsvParsed extends CsvResult {
 }
 
 final _headerRe = RegExp(r'date|libell|montant|amount|label|description|d[ée]bit|cr[ée]dit', caseSensitive: false);
+final _operationDateRe = RegExp(r'date.*op[ée]ration', caseSensitive: false);
+final _plainDateRe = RegExp(r'^(?!.*valeur).*date', caseSensitive: false);
+final _operationLabelRe = RegExp(r'libell.*op[ée]ration', caseSensitive: false);
+final _amountRe = RegExp(r'^(?!.*date).*(montant|amount|somme|valeur)', caseSensitive: false);
+final _bankCategoryRe = RegExp(r'^cat[ée]gorie$', caseSensitive: false);
+final _bankExcludedRe = RegExp('exclue', caseSensitive: false);
 final _labelRe = RegExp(r'libell|label|description|intitul|nature|d[ée]tail|merchant|b[ée]n[ée]ficiaire', caseSensitive: false);
+
+const _bankCategories = {
+  'aliment': SpendCategory.alim,
+  'transport': SpendCategory.transport,
+  'loisir': SpendCategory.loisirs,
+  'logement': SpendCategory.logement,
+  'shopping': SpendCategory.shop,
+  'epargne': SpendCategory.invest,
+  'placement': SpendCategory.invest,
+  'sante': SpendCategory.sante,
+  'santé': SpendCategory.sante,
+};
+
+SpendCategory? _fromBankCategory(String bankCategory) {
+  final c = bankCategory.toLowerCase();
+  for (final e in _bankCategories.entries) {
+    if (c.contains(e.key)) return e.value;
+  }
+  return null;
+}
 
 List<String> _splitLine(String line, String sep) {
   final out = <String>[];
@@ -66,9 +93,19 @@ CsvResult parseCsv(String input) {
   final body = rows.skip(hi + 1).where((r) => r.length >= 2).toList();
 
   int find(RegExp re) => header == null ? -1 : header.indexWhere(re.hasMatch);
-  var di = find(RegExp('date', caseSensitive: false));
-  var li = find(_labelRe);
-  var ai = find(RegExp('montant|amount|somme|valeur', caseSensitive: false));
+  int findFirst(List<RegExp> res) {
+    for (final re in res) {
+      final i = find(re);
+      if (i >= 0) return i;
+    }
+    return -1;
+  }
+
+  final anyDateIndex = find(RegExp('date', caseSensitive: false));
+  var di = findFirst([_operationDateRe, _plainDateRe]);
+  var li = findFirst([_operationLabelRe, _labelRe]);
+  var ai = find(_amountRe);
+  final bankCategoryIndex = find(_bankCategoryRe);
   final dbi = find(RegExp(r'd[ée]bit', caseSensitive: false));
   final cri = find(RegExp(r'cr[ée]dit', caseSensitive: false));
 
@@ -99,7 +136,7 @@ CsvResult parseCsv(String input) {
   var skipped = 0;
   for (var i = 0; i < body.length; i++) {
     final r = body[i];
-    final date = parseDateText(cell(r, di));
+    final date = parseDateText(cell(r, di)) ?? parseDateText(cell(r, anyDateIndex));
     double? amt;
     if (ai >= 0) {
       amt = parseAmount(cell(r, ai));
@@ -114,7 +151,17 @@ CsvResult parseCsv(String input) {
       continue;
     }
     final rounded = (amt * 100).round() / 100;
-    entries.add(TransactionEntry(id: 'i${i}_${DateTime.now().microsecondsSinceEpoch}', date: date, raw: raw, amount: rounded, category: categorize(raw, rounded)));
+    final bankCategory = cell(r, bankCategoryIndex);
+    var category = categorize(raw, rounded);
+    if (category == SpendCategory.autre && rounded < 0) category = _fromBankCategory(bankCategory) ?? category;
+    entries.add(TransactionEntry(
+      id: 'i${i}_${DateTime.now().microsecondsSinceEpoch}',
+      date: date,
+      raw: raw,
+      amount: rounded,
+      category: category,
+      excluded: _bankExcludedRe.hasMatch(bankCategory) || isIgnoredLabel(raw),
+    ));
   }
   if (entries.isEmpty) return const CsvFailure('Aucune opération lisible dans ce fichier.');
 
