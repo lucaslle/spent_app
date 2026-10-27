@@ -128,8 +128,7 @@ SpendingStats? computeSpendingStats(List<TransactionEntry> tx, Map<SpendCategory
         final list = mTx.where((t) => t.isSpend && t.category == c).toList();
         return CategoryStat(category: c, amount: _sumAbs(list), count: list.length, budget: budgets[c] ?? 0);
       }(),
-  ].where((c) => c.amount > 0 || c.budget > 0).toList()
-    ..sort((a, b) => b.amount.compareTo(a.amount));
+  ]..sort((a, b) => b.amount.compareTo(a.amount));
 
   final groups = <String, MerchantStat>{};
   for (final t in mTx.where((t) => t.isSpend)) {

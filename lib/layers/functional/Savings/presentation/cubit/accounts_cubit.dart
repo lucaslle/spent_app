@@ -2,7 +2,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../technical/Formatting/formatters.dart';
 import '../../domain/account_math.dart';
-import '../../domain/default_accounts.dart';
 import '../../domain/entities/account.dart';
 import '../../domain/entities/account_type.dart';
 import '../../domain/gateways/accounts_gateway.dart';
@@ -12,7 +11,7 @@ class AccountsCubit extends Cubit<List<Account>> {
 
   final AccountsGateway _gateway;
 
-  Future<void> load() async => emit(await _gateway.load() ?? defaultAccounts());
+  Future<void> load() async => emit(await _gateway.load() ?? const []);
 
   Future<void> _commit(List<Account> next) {
     emit(next);

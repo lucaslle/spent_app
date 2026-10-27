@@ -13,7 +13,6 @@ import '../../../../technical/Theme/row_gap.dart';
 import '../../data/csv_file_reader.dart';
 import '../../domain/csv_parser.dart';
 import '../../domain/entities/spend_category.dart';
-import '../../domain/sample_data.dart';
 import '../cubit/spending_cubit.dart';
 import '../cubit/spending_view_cubit.dart';
 import '../widgets/transaction_row.dart';
@@ -117,7 +116,6 @@ class _ImportSheetState extends State<_ImportSheet> {
             Expanded(child: AppText(steps[i], size: 13, weight: FontWeight.w500, color: AppColors.soft)),
           ]),
         ),
-      AppButton(label: 'Essayer avec un relevé d’exemple', background: AppColors.cardInner, foreground: AppColors.text, onPressed: () => _handle('releve_compte_courant.csv', sampleCsv())),
     ]);
   }
 

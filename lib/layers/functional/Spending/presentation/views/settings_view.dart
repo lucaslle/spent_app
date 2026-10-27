@@ -61,7 +61,7 @@ class _SettingsViewState extends State<SettingsView> {
             ]),
             const SizedBox(height: 14),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const AppText('Masquer les montants'),
+              const AppText('Flouter les montants'),
               AppToggle(value: hide, onChanged: context.read<AmountPrivacyCubit>().toggle),
             ]),
           ]),
@@ -87,10 +87,6 @@ class _SettingsViewState extends State<SettingsView> {
         AppButton(label: 'Réinitialiser les budgets', background: AppColors.card, foreground: AppColors.text, onPressed: () {
           cubit.resetBudgets();
           showToast(context, 'Budgets réinitialisés');
-        }),
-        AppButton(label: 'Recharger l’exemple', background: AppColors.card, foreground: AppColors.text, onPressed: () {
-          cubit.reloadSample();
-          showToast(context, 'Exemple rechargé');
         }),
         AppButton(
           label: _armed ? 'Confirmer : tout effacer' : 'Effacer les données',

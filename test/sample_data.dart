@@ -1,7 +1,6 @@
-import '../../../technical/Formatting/formatters.dart';
-import 'categorizer.dart';
-import 'entities/spend_category.dart';
-import 'entities/transaction_entry.dart';
+import 'package:spent_app/layers/functional/Spending/domain/categorizer.dart';
+import 'package:spent_app/layers/functional/Spending/domain/entities/transaction_entry.dart';
+import 'package:spent_app/layers/technical/Formatting/formatters.dart';
 
 class _Lcg {
   _Lcg(this._seed);
@@ -68,5 +67,3 @@ String sampleCsv() {
   });
   return 'Date;Libellé;Montant\n${lines.join('\n')}';
 }
-
-Map<SpendCategory, double> defaultBudgets() => Map.of(SpendCategory.defaultBudgets);

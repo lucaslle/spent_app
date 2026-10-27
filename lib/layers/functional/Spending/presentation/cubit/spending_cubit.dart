@@ -3,28 +3,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/spend_category.dart';
 import '../../domain/entities/transaction_entry.dart';
 import '../../domain/gateways/spending_gateway.dart';
-import '../../domain/sample_data.dart';
 import '../../domain/categorizer.dart';
 import 'spending_state.dart';
 
 enum ImportMode { replace, append }
 
 class SpendingCubit extends Cubit<SpendingState> {
-  SpendingCubit(this._gateway) : super(SpendingState(entries: const [], budgets: defaultBudgets(), lastImport: 'Aucun import'));
+  SpendingCubit(this._gateway) : super(SpendingState(entries: const [], budgets: const {}, lastImport: 'Aucun import'));
 
   final SpendingGateway _gateway;
 
   Future<void> load() async {
     final saved = await _gateway.load();
-    if (saved != null) {
-      emit(SpendingState(entries: saved.entries, budgets: saved.budgets, lastImport: saved.lastImport, loaded: true));
-      return;
-    }
-    final sample = sampleTransactions();
-    emit(SpendingState(entries: sample, budgets: defaultBudgets(), lastImport: _sampleLabel(sample.length), loaded: true));
+    emit(SpendingState(
+      entries: saved?.entries ?? const [],
+      budgets: saved?.budgets ?? const {},
+      lastImport: saved?.lastImport ?? 'Aucun import',
+      loaded: true,
+    ));
   }
-
-  String _sampleLabel(int n) => 'Exemple intégré · $n opérations';
 
   Future<void> _commit(SpendingState next) {
     emit(next);
@@ -55,12 +52,7 @@ class SpendingCubit extends Cubit<SpendingState> {
   Future<void> setBudget(SpendCategory category, double value) =>
       _commit(state.copyWith(budgets: {...state.budgets, category: value < 0 ? 0 : value}));
 
-  Future<void> resetBudgets() => _commit(state.copyWith(budgets: defaultBudgets()));
-
-  Future<void> reloadSample() {
-    final sample = sampleTransactions();
-    return _commit(state.copyWith(entries: sample, lastImport: _sampleLabel(sample.length)));
-  }
+  Future<void> resetBudgets() => _commit(state.copyWith(budgets: const {}));
 
   Future<void> clearAll() => _commit(state.copyWith(entries: const [], lastImport: 'Aucun import'));
 }

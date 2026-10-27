@@ -25,9 +25,5 @@ enum SpendCategory {
 
   static const spending = [alim, resto, transport, logement, abo, shop, loisirs, sante, autre];
 
-  static const defaultBudgets = <SpendCategory, double>{
-    alim: 320, resto: 180, transport: 120, logement: 800, abo: 90, shop: 150, loisirs: 80, sante: 40, autre: 50,
-  };
-
   static SpendCategory byName(String name) => values.firstWhere((c) => c.name == name, orElse: () => autre);
 }

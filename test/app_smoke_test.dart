@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spent_app/layers/functional/Spending/data/shared_prefs_spending_gateway.dart';
+import 'package:spent_app/layers/functional/Spending/domain/entities/spend_category.dart';
+import 'package:spent_app/layers/functional/Spending/domain/gateways/spending_gateway.dart';
+import 'package:spent_app/layers/technical/Formatting/amount_privacy_cubit.dart';
 import 'package:spent_app/main.dart';
+
+import 'sample_data.dart';
 
 Future<void> _loadFonts() async {
   for (final (family, files) in [
@@ -25,6 +32,8 @@ void main() {
     addTearDown(tester.view.reset);
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
+    final entries = sampleTransactions();
+    await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: entries, budgets: const {SpendCategory.alim: 320, SpendCategory.resto: 180}, lastImport: 'test.csv'));
 
     await tester.pumpWidget(EcuApp(prefs: prefs));
     await tester.pumpAndSettle();
@@ -51,5 +60,45 @@ void main() {
     await tester.tap(row);
     await tester.pumpAndSettle();
     expect(find.text('Exclure des statistiques'), findsOneWidget);
+  });
+
+  testWidgets('démarre vide, sans aucune donnée', (tester) async {
+    await _loadFonts();
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(EcuApp(prefs: prefs));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Aucune opération'), findsOneWidget);
+    expect(find.text('Patrimoine · 0 compte'), findsOneWidget);
+    for (final tab in ['Opérations', 'Budget', 'Analyse', 'Réglages']) {
+      await tester.tap(find.text(tab).last);
+      await tester.pumpAndSettle();
+    }
+    expect(find.textContaining('Exemple'), findsNothing);
+  });
+
+  testWidgets('les montants sont floutés puis révélés', (tester) async {
+    await _loadFonts();
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await SharedPrefsSpendingGateway(prefs).save(SpendingSnapshot(entries: sampleTransactions(), budgets: const {SpendCategory.alim: 320}, lastImport: 'test.csv'));
+
+    await tester.pumpWidget(EcuApp(prefs: prefs));
+    await tester.pumpAndSettle();
+    final blurred = find.byWidgetPredicate((w) => w is ImageFiltered);
+    expect(blurred, findsNothing);
+    await tester.element(find.text('Vos dépenses')).read<AmountPrivacyCubit>().toggle();
+    await tester.pumpAndSettle();
+    expect(blurred, findsWidgets);
+    await tester.element(find.text('Vos dépenses')).read<AmountPrivacyCubit>().toggle();
+    await tester.pumpAndSettle();
+    expect(blurred, findsNothing);
   });
 }

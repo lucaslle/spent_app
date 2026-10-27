@@ -2,9 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:spent_app/layers/functional/Spending/domain/categorizer.dart';
 import 'package:spent_app/layers/functional/Spending/domain/csv_parser.dart';
 import 'package:spent_app/layers/functional/Spending/domain/entities/spend_category.dart';
-import 'package:spent_app/layers/functional/Spending/domain/sample_data.dart';
 import 'package:spent_app/layers/functional/Spending/domain/spending_stats.dart';
 import 'package:spent_app/layers/technical/Formatting/formatters.dart';
+
+import 'sample_data.dart';
+
+const _budgets = <SpendCategory, double>{SpendCategory.alim: 320, SpendCategory.resto: 180, SpendCategory.logement: 800};
 
 void main() {
   test('categorize: le mot-clé le plus long gagne', () {
@@ -42,12 +45,12 @@ void main() {
   });
 
   test('stats du mois sur l’exemple', () {
-    final s = computeSpendingStats(sampleTransactions(), SpendCategory.defaultBudgets, '2026-10-27')!;
+    final s = computeSpendingStats(sampleTransactions(), _budgets, '2026-10-27')!;
     expect(s.isToday, isTrue);
     expect(s.day, 27);
     expect(s.daysInMonth, 31);
     expect(s.spent, greaterThan(0));
     expect(s.merchants.length, 5);
-    expect(computeSpendingStats(const [], SpendCategory.defaultBudgets, '2026-10-27'), isNull);
+    expect(computeSpendingStats(const [], _budgets, '2026-10-27'), isNull);
   });
 }

@@ -9,6 +9,8 @@ import '../layers/functional/Spending/presentation/views/budget_view.dart';
 import '../layers/functional/Spending/presentation/views/settings_view.dart';
 import '../layers/functional/Spending/presentation/views/today_view.dart';
 import '../layers/functional/Spending/presentation/views/transactions_view.dart';
+import '../layers/technical/Formatting/amount_privacy_cubit.dart';
+import '../layers/technical/Shake/shake_listener.dart';
 import '../layers/technical/Theme/app_colors.dart';
 import 'app_tab_cubit.dart';
 import 'floating_tab_bar.dart';
@@ -35,9 +37,12 @@ class AppShell extends StatelessWidget {
       AppTab.analysis => AnalysisView(onShowFilter: showFilter),
       AppTab.settings => const SettingsView(),
     };
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: Stack(children: [Positioned.fill(child: KeyedSubtree(key: ValueKey(tab), child: body)), FloatingTabBar(current: tab, onSelect: tabs.select)]),
+    return ShakeListener(
+      onShake: context.read<AmountPrivacyCubit>().toggle,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: Stack(children: [Positioned.fill(child: KeyedSubtree(key: ValueKey(tab), child: body)), FloatingTabBar(current: tab, onSelect: tabs.select)]),
+      ),
     );
   }
 }

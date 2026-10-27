@@ -16,7 +16,7 @@ class AmountPrivacyCubit extends Cubit<bool> {
   }
 
   String money(double n, {int decimals = 2, bool sign = false}) =>
-      state ? '••• €' : formatEuro(n, decimals: decimals, sign: sign);
+      state ? '$blurMarker${formatEuro(n, decimals: decimals, sign: sign)}' : formatEuro(n, decimals: decimals, sign: sign);
 }
 
 extension MoneyContext on BuildContext {

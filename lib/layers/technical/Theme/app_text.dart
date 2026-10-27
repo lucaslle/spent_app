@@ -1,5 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
+import '../Formatting/formatters.dart';
 import 'app_colors.dart';
 
 class AppText extends StatelessWidget {
@@ -26,8 +29,9 @@ class AppText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      data,
+    final blurred = data.contains(blurMarker);
+    final text = Text(
+      blurred ? data.replaceAll(blurMarker, '') : data,
       textAlign: align,
       maxLines: maxLines,
       overflow: maxLines == null ? null : TextOverflow.ellipsis,
@@ -40,5 +44,7 @@ class AppText extends StatelessWidget {
         fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
+    if (!blurred) return text;
+    return ImageFiltered(imageFilter: ui.ImageFilter.blur(sigmaX: 7, sigmaY: 7, tileMode: TileMode.decal), child: text);
   }
 }
