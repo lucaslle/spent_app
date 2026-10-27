@@ -1,24 +1,29 @@
 # écu
 
-Suivi des dépenses quotidiennes pour jeunes épargnants. App mobile Expo (React Native, TypeScript). Toutes les données restent sur l'appareil.
+Suivi des dépenses quotidiennes pour jeunes épargnants. App Flutter (iOS / Android). Toutes les données restent sur l'appareil.
+
+- Import d'un relevé bancaire CSV (date ; libellé ; montant) et catégorisation automatique par mots-clés
+- Tableau de bord du jour, budget mensuel par catégorie, analyses
+- Détail d'une opération avec reclassement en masse
+- Comptes d'épargne et de placement saisis à la main, avec historique des soldes
 
 ## Lancer
 
 ```bash
-npm install
-npx expo start
+flutter pub get
+flutter run
 ```
 
-Scanner le QR code avec Expo Go, ou `npm run android` / `npm run ios`.
+## Vérifier
 
-## Scripts
+```bash
+flutter analyze
+flutter test
+```
 
-- `npm test` : tests de la logique métier (`src/domain`)
-- `npm run typecheck` : vérification TypeScript
+## Structure (OSDD)
 
-## Structure
-
-- `src/domain` : logique pure (parsing CSV, catégorisation, statistiques, comptes)
-- `src/screens` : Jour, Opérations, Budget, Analyse, Réglages
-- `src/sheets` : import CSV, détail d'une opération, comptes
-- `src/components` : composants partagés
+- `lib/layers/technical/` : Theme (design system), Formatting (formats FR, masquage des montants), Charts
+- `lib/layers/functional/Spending/` : opérations, budgets, statistiques, import CSV (domain / data / presentation)
+- `lib/layers/functional/Savings/` : comptes et patrimoine (domain / data / presentation)
+- `lib/app/` : composition des onglets et de la barre flottante
