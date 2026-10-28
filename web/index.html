@@ -48,6 +48,11 @@
     .button.secondary { border: 1.5px solid #3A342A; background: transparent; color: var(--ink); }
     .button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     .note { font-size: 14px; }
+    .install { display: flex; align-items: center; gap: 16px; padding: 14px; border-radius: 20px; background: #1A1710; }
+    .install img { width: 112px; height: 112px; flex: none; border-radius: 8px; }
+    .install strong { display: block; margin-bottom: 4px; font-size: 16px; }
+    .install p { font-size: 14px; }
+    .install a { color: var(--accent); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -63,6 +68,13 @@
     <div class="actions">
       <button class="button primary" id="reset" type="button">Recommencer la démo</button>
       <a class="button secondary" href="https://github.com/lucaslle/spent_app">Code source</a>
+    </div>
+    <div class="install">
+      <img src="install-qr.svg" alt="QR code de téléchargement de l'application Android">
+      <div>
+        <strong>Installer sur Android</strong>
+        <p>Scanne le code avec ton téléphone, puis ouvre le fichier téléchargé et autorise l'installation. Ou <a href="ecu.apk" download>télécharge l'APK</a>.</p>
+      </div>
     </div>
     <p class="note">Sur téléphone, secouer l'appareil floute les montants (ici : Réglages › Flouter les montants). Le verrouillage biométrique est propre à l'application mobile.</p>
   </section>

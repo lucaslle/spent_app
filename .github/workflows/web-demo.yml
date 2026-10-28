@@ -29,6 +29,16 @@ jobs:
       - name: Build the demo
         run: flutter build web --release --base-href /spent_app/ --dart-define=ECU_DEMO=true
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build the Android app
+        run: |
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk build/web/ecu.apk
+
       - name: Publish to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
