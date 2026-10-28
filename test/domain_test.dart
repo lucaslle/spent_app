@@ -6,7 +6,7 @@ import 'package:spent_app/layers/functional/Spending/domain/entities/spend_categ
 import 'package:spent_app/layers/functional/Spending/domain/spending_stats.dart';
 import 'package:spent_app/layers/technical/Formatting/formatters.dart';
 
-import 'sample_data.dart';
+import 'package:spent_app/demo/demo_data.dart';
 
 const _budgets = <SpendCategory, double>{SpendCategory.alim: 320, SpendCategory.resto: 180, SpendCategory.logement: 800};
 

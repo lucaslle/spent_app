@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app_shell.dart';
+import 'demo/demo_seed.dart';
 import 'app/app_tab_cubit.dart';
 import 'layers/functional/Savings/data/shared_prefs_accounts_gateway.dart';
 import 'layers/functional/Savings/presentation/cubit/accounts_cubit.dart';
@@ -20,6 +21,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark, statusBarIconBrightness: Brightness.light, statusBarColor: Colors.transparent));
   final prefs = await SharedPreferences.getInstance();
+  if (const bool.fromEnvironment('ECU_DEMO')) await seedDemoIfEmpty(prefs);
   runApp(EcuApp(prefs: prefs, authenticator: LocalAuthDeviceAuthenticator()));
 }
 

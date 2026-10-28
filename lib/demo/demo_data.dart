@@ -14,7 +14,13 @@ class _Lcg {
   T pick<T>(List<T> a) => a[(next() * a.length).floor()];
 }
 
-List<TransactionEntry> sampleTransactions() {
+(int, int) _shiftMonth(int y, int m, int by) {
+  final index = y * 12 + (m - 1) + by;
+  return (index ~/ 12, index % 12 + 1);
+}
+
+List<TransactionEntry> sampleTransactions({String today = '2026-10-27'}) {
+  final end = IsoDate.parse(today);
   final r = _Lcg(11);
   final out = <TransactionEntry>[];
   var id = 0;
@@ -29,8 +35,8 @@ List<TransactionEntry> sampleTransactions() {
     (15, 'PRLV SEPA BASIC FIT', -29.99), (25, 'VIR SEPA SALAIRE ACME SAS', 2150),
   ];
 
-  for (final (y, m) in const [(2026, 8), (2026, 9), (2026, 10)]) {
-    final last = m == 10 ? 27 : daysInMonth(y, m);
+  for (final (y, m) in [for (final by in [-2, -1, 0]) _shiftMonth(end.y, end.m, by)]) {
+    final last = y == end.y && m == end.m ? end.d : daysInMonth(y, m);
     for (final (d, l, a) in fixed) {
       if (d <= last) add(isoDate(y, m, d), l, a);
     }
@@ -49,13 +55,18 @@ List<TransactionEntry> sampleTransactions() {
       if (r.next() < 0.05) add(date, 'VIR LYDIA ${r.pick(['THOMAS', 'CAMILLE', 'LEA'])}', (r.next() < 0.5 ? -1 : 1) * (10 + r.next() * 30));
     }
   }
-  add('2026-08-18', 'CB HELLOASSO 18/08', -25);
-  add('2026-09-12', 'CB SQ *ATELIER VAUGIRARD 12/09', -42);
-  add('2026-10-04', 'PAIEMENT CB SUMUP *KIOSQUE 04/10', -8.5);
-  add('2026-10-21', 'CB SQ *ATELIER VAUGIRARD 21/10', -38);
-  add('2026-10-27', 'CB BOULANGERIE PAUL 27/10', -3.2);
-  add('2026-10-27', 'CB MONOPRIX 27/10', -23.45);
-  add('2026-10-27', 'CB UBER TRIP 27/10', -12.8);
+  void addDated(int monthsBack, int day, String label, double amount) {
+    final (y, m) = _shiftMonth(end.y, end.m, -monthsBack);
+    add(isoDate(y, m, day), '$label ${pad2(day)}/${pad2(m)}', amount);
+  }
+
+  addDated(2, 18, 'CB HELLOASSO', -25);
+  addDated(1, 12, 'CB SQ *ATELIER VAUGIRARD', -42);
+  addDated(0, 4, 'PAIEMENT CB SUMUP *KIOSQUE', -8.5);
+  addDated(0, 21, 'CB SQ *ATELIER VAUGIRARD', -38);
+  for (final (label, amount) in const [('CB BOULANGERIE PAUL', -3.2), ('CB MONOPRIX', -23.45), ('CB UBER TRIP', -12.8)]) {
+    add(today, '$label ${pad2(end.d)}/${pad2(end.m)}', amount);
+  }
   out.sort(compareByDateDesc);
   return out;
 }

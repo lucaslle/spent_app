@@ -11,7 +11,7 @@ import 'package:spent_app/layers/technical/Formatting/formatters.dart';
 import 'package:spent_app/layers/technical/Security/device_authenticator.dart';
 import 'package:spent_app/main.dart';
 
-import 'sample_data.dart';
+import 'package:spent_app/demo/demo_data.dart';
 
 class _FakeAuthenticator implements DeviceAuthenticator {
   @override
